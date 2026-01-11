@@ -1,0 +1,511 @@
+openapi: 3.0.3
+
+info:
+  title: E-Commerce Backend API
+  description: Unified OpenAPI documentation for all e-commerce microservices
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: API Gateway
+
+tags:
+  - name: Auth Service
+  - name: User Service
+  - name: Product Service
+  - name: Category Service
+  - name: Cart Service
+  - name: Order Service
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  #########################
+  # AUTH SERVICE
+  #########################
+
+  /api/users/login:
+    post:
+      tags: [Auth Service]
+      summary: User login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: string
+        "401":
+          description: Invalid credentials
+
+  /api/users/register:
+    post:
+      tags: [Auth Service]
+      summary: User registration
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        "200":
+          description: User registered successfully
+
+  #########################
+  # USER SERVICE
+  #########################
+
+  /api/users:
+    get:
+      tags: [User Service]
+      summary: Get all users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+
+    post:
+      tags: [User Service]
+      summary: Create user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        "200":
+          description: User added successfully
+
+  /api/users/{id}:
+    get:
+      tags: [User Service]
+      summary: Get user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        "404":
+          description: User not found
+
+    put:
+      tags: [User Service]
+      summary: Update user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+      responses:
+        "200":
+          description: User updated successfully
+        "404":
+          description: User not found
+
+  #########################
+  # PRODUCT SERVICE
+  #########################
+
+  /api/products:
+    post:
+      tags: [Product Service]
+      summary: Create product
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        "201":
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+
+    get:
+      tags: [Product Service]
+      summary: Get paginated products
+      security: []
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 10 }
+        - name: sortBy
+          in: query
+          schema: { type: string, default: createdAt }
+        - name: sortDir
+          in: query
+          schema: { type: string, default: desc }
+      responses:
+        "200":
+          description: Paginated products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageResponseProduct'
+
+  /api/products/all:
+    get:
+      tags: [Product Service]
+      summary: Get all products
+      security: []
+      responses:
+        "200":
+          description: All products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponse'
+
+  /api/products/{id}:
+    get:
+      tags: [Product Service]
+      summary: Get product by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        "404":
+          description: Product not found
+
+    put:
+      tags: [Product Service]
+      summary: Update product
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        "200":
+          description: Product updated
+        "404":
+          description: Product not found
+
+    delete:
+      tags: [Product Service]
+      summary: Delete product
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Product deleted
+        "404":
+          description: Product not found
+
+  /api/products/search:
+    get:
+      tags: [Product Service]
+      summary: Search products
+      security: []
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponse'
+
+  #########################
+  # CATEGORY SERVICE
+  #########################
+
+  /api/categories:
+    post:
+      tags: [Category Service]
+      summary: Create category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        "201":
+          description: Category created
+
+    get:
+      tags: [Category Service]
+      summary: Get all categories
+      responses:
+        "200":
+          description: Categories list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+
+  /api/categories/{id}:
+    get:
+      tags: [Category Service]
+      summary: Get category by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Category found
+
+    put:
+      tags: [Category Service]
+      summary: Update category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        "200":
+          description: Category updated
+
+    delete:
+      tags: [Category Service]
+      summary: Delete category
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Category deleted
+
+  #########################
+  # CART SERVICE
+  #########################
+
+  /api/cart:
+    get:
+      tags: [Cart Service]
+      summary: Get cart
+      parameters:
+        - name: X-User-ID
+          in: header
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: User cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartResponse'
+
+    post:
+      tags: [Cart Service]
+      summary: Add item to cart
+      parameters:
+        - name: X-User-ID
+          in: header
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemRequest'
+      responses:
+        "201":
+          description: Item added
+
+  /api/cart/items/{productId}:
+    delete:
+      tags: [Cart Service]
+      summary: Remove item from cart
+      parameters:
+        - name: X-User-ID
+          in: header
+          required: true
+          schema: { type: integer }
+        - name: productId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Item removed
+
+  #########################
+  # ORDER SERVICE
+  #########################
+
+  /api/orders:
+    post:
+      tags: [Order Service]
+      summary: Create order
+      parameters:
+        - name: X-User-ID
+          in: header
+          required: true
+          schema: { type: integer }
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+
+    AuthRequest:
+      type: object
+      properties:
+        email: { type: string }
+        password: { type: string }
+
+    UserRequest:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+
+    UserResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+
+    ProductRequest:
+      type: object
+      properties:
+        name: { type: string }
+        price: { type: number }
+        description: { type: string }
+
+    ProductResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        price: { type: number }
+
+    PageResponseProduct:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponse'
+        totalPages: { type: integer }
+        totalElements: { type: integer }
+
+    CategoryRequest:
+      type: object
+      properties:
+        name: { type: string }
+
+    CategoryResponse:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+
+    CartItemRequest:
+      type: object
+      properties:
+        productId: { type: integer }
+        quantity: { type: integer }
+
+    CartResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItemRequest'
+
+    OrderResponse:
+      type: object
+      properties:
+        orderId: { type: integer }
+        status: { type: string }

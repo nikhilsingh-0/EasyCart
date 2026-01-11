@@ -15,15 +15,19 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     private Long id;
-    private String keycloakId;
+    @Column(nullable = false)
     private String firstName;
     private String lastName;
-
+    @Column(nullable = false,unique = true)
     private String email;
+    @Column(nullable = false)
+    private String password;
     private String phone;
+    @Enumerated(EnumType.STRING)
     private UserRole role = UserRole.CUSTOMER;
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "address_id")
     private Address address;
 
     @CreatedDate

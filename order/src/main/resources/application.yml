@@ -1,6 +1,13 @@
 spring:
   application:
     name: order
+  datasource:
+    url: jdbc:mysql://localhost:3306/order
+    username: springstudent
+    password: springstudent
+  jpa:
+    hibernate:
+      ddl-auto: update
   config:
     import: optional:configserver:http://localhost:8888
 
@@ -13,3 +20,40 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: ALWAYS
+  health:
+    circuitbreakers:
+      enabled: true
+
+# Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      orderService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        automatic-transition-from-open-to-half-open-enabled: true
+        sliding-window-type: COUNT_BASED
+  retry:
+    instances:
+      retryBreaker:
+        max-attempts: 5
+        wait-duration: 500ms
+  ratelimiter:
+    instances:
+      rateBreaker:
+        timeout-duration: 0
+        limit-refresh-period: 4s
+        limit-for-period: 2

@@ -1,8 +1,21 @@
 spring:
   application:
     name: product
+  datasource:
+    url: jdbc:mysql://localhost:3306/product
+    username: springstudent
+    password: springstudent
+  jpa:
+    hibernate:
+      ddl-auto: update
   config:
     import: optional:configserver:http://localhost:8888
+  cache:
+    type: redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
 server:
   port: 8082
 

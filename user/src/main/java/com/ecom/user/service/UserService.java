@@ -8,51 +8,48 @@ import com.ecom.user.model.Address;
 import com.ecom.user.model.User;
 import com.ecom.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
-//    private final KeyCloakAdminService keyCloakAdminService;
+    private final PasswordEncoder passwordEncoder;
 
-    public List<UserResponse> fetchAllUsers(){
-        return userRepository.findAll().stream()
-                .map(this::mapToUserResponse)
-                .collect(Collectors.toList());
-    }
-
-    public void addUser(UserRequest userRequest){
-//        String token = keyCloakAdminService.getAdminAccessToken();
-//        String keycloakUserId =
-//                keyCloakAdminService.createUser(token, userRequest);
-
+    public User addUser(UserRequest userRequest) {
         User user = new User();
         updateUserFromRequest(user, userRequest);
-//        user.setKeycloakId(keycloakUserId);
-
-//        keyCloakAdminService.assignRealmRoleToUser(userRequest.getUsername(),
-//                "USER", keycloakUserId);
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
-    public Optional<UserResponse> fetchUser(int id) {
-        return userRepository.findById(Long.valueOf(id))
+    @PreAuthorize("#id == authentication.principal")
+    public Optional<UserResponse> fetchUser(Long id) {
+        return userRepository.findById(id)
                 .map(this::mapToUserResponse);
     }
 
-    public boolean updateUser(int id, UserRequest updatedUserRequest) {
-        return userRepository.findById(Long.valueOf(id))
-                .map(existingUser -> {
-                    updateUserFromRequest(existingUser, updatedUserRequest);
-                    userRepository.save(existingUser);
-                    return true;
-                }).orElse(false);
+    @PreAuthorize("#id == authentication.name")
+    public boolean updateUser(Long id, UserRequest updatedUserRequest) {
+        return userRepository.findById(id).map(existingUser -> {
+            updateUserFromRequest(existingUser, updatedUserRequest);
+            userRepository.save(existingUser);
+            return true;
+        }).orElse(false);
+    }
+
+    @PreAuthorize("#id == authentication.name")
+    public String deleteUser(Long id){
+        Optional<User> user = userRepository.findById(id);
+        if (user.isPresent()){
+            userRepository.delete(user.get());
+            return "User Delete Successfully";
+        }
+        return "User is not Present";
     }
 
     private void updateUserFromRequest(User user, UserRequest userRequest) {
@@ -60,6 +57,7 @@ public class UserService {
         user.setLastName(userRequest.getLastName());
         user.setEmail(userRequest.getEmail());
         user.setPhone(userRequest.getPhone());
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
         if (userRequest.getAddress() != null) {
             Address address = new Address();
             address.setStreet(userRequest.getAddress().getStreet());
@@ -67,13 +65,12 @@ public class UserService {
             address.setZipcode(userRequest.getAddress().getZipcode());
             address.setCity(userRequest.getAddress().getCity());
             address.setCountry(userRequest.getAddress().getCountry());
-//            user.setAddress(address);
+            user.setAddress(address);
         }
     }
 
-    private UserResponse mapToUserResponse(User user){
+    private UserResponse mapToUserResponse(User user) {
         UserResponse response = new UserResponse();
-        response.setKeyCloakId(user.getKeycloakId());
         response.setId(String.valueOf(user.getId()));
         response.setFirstName(user.getFirstName());
         response.setLastName(user.getLastName());

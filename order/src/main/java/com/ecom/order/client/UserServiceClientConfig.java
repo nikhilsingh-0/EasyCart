@@ -14,9 +14,10 @@ public class UserServiceClientConfig {
 
 
     @Bean
-    public UserServiceClient userServiceClientInterface(RestClient.Builder restClientBuilder) {
+    public UserServiceClient userServiceClientInterface(RestClient.Builder restClientBuilder, GatewayHeaderPropagationInterceptor interceptor) {
         RestClient restClient = restClientBuilder
                 .baseUrl("http://user")
+                .requestInterceptor(interceptor)
                 .defaultStatusHandler(HttpStatusCode::is4xxClientError,
                         ((request, response) -> Optional.empty()))
                 .build();

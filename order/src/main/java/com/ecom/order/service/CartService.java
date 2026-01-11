@@ -3,11 +3,12 @@ package com.ecom.order.service;
 
 import com.ecom.order.client.ProductServiceClient;
 import com.ecom.order.client.UserServiceClient;
-import com.ecom.order.dto.CartItemRequest;
-import com.ecom.order.dto.ProductResponse;
-import com.ecom.order.dto.UserResponse;
-import com.ecom.order.model.CartItem;
-import com.ecom.order.repository.CartItemRepository;
+import com.ecom.order.dto.*;
+import com.ecom.order.exception.CartNotFoundException;
+import com.ecom.order.exception.ProductNotFoundException;
+import com.ecom.order.exception.UserNotFoundException;
+import com.ecom.order.model.Cart;
+import com.ecom.order.repository.CartRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,66 +20,92 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class CartService {
-    private final CartItemRepository cartItemRepository;
+
+    private final CartRepository cartRepository;
     private final ProductServiceClient productServiceClient;
     private final UserServiceClient userServiceClient;
-    int attempt = 0;
 
-    //    @CircuitBreaker(name = "productService", fallbackMethod = "addToCartFallBack")
-//    @Retry(name = "retryBreaker", fallbackMethod = "addToCartFallBack")
-    public boolean addToCart(String userId, CartItemRequest request) {
-        System.out.println("ATTEMPT COUNT: " + ++attempt);
-        // Look for product
-        ProductResponse productResponse = productServiceClient.getProductDetails(request.getProductId());
-        if (productResponse == null || productResponse.getStockQuantity() < request.getQuantity()){
-            return false;
-        }
-        UserResponse userResponse = userServiceClient.getUserDetails(userId);
-        if (userResponse == null){
-            return false;
+//    @CircuitBreaker(name = "orderService", fallbackMethod = "addToCartFallback")
+//    @Retry(name = "retryBreaker")
+    public boolean addToCart(Long userId, CartItemRequest request) {
+
+        //Validate user
+        UserResponse response = userServiceClient.getUserDetails(userId);
+        if (response==null){
+            throw new UserNotFoundException("Username not found");
         }
 
-        CartItem existingCartItem = cartItemRepository.findByUserIdAndProductId(userId, request.getProductId());
-        if (existingCartItem != null) {
-            // Update the quantity
-            existingCartItem.setQuantity(existingCartItem.getQuantity() + request.getQuantity());
-            existingCartItem.setPrice(BigDecimal.valueOf(1000.00));
-            cartItemRepository.save(existingCartItem);
-        } else {
-            // Create new cart item
-            CartItem cartItem = new CartItem();
-            cartItem.setUserId(userId);
-            cartItem.setProductId(request.getProductId());
-            cartItem.setQuantity(request.getQuantity());
-            cartItem.setPrice(BigDecimal.valueOf(1000.00));
-            cartItemRepository.save(cartItem);
+        //Fetch product
+        ProductResponse product =
+                productServiceClient.getProductDetails(request.getProductId());
+
+        if (product == null) {
+            throw new ProductNotFoundException("Product not found");
         }
-        return true;
+
+        //Load or create cart
+        Cart cart = cartRepository
+                .findByUserId(userId)
+                .orElseGet(() -> cartRepository.save(new Cart(userId)));
+
+        //Delegate to domain
+        cart.addItem(
+                product.getId(),
+                request.getQuantity(),
+                product.getPrice(),
+                product.getStockQuantity()
+        );
+
+        //Persist aggregate root
+        Cart savedCart = cartRepository.save(cart);
+
+        return savedCart.getId()>0;
     }
 
-    public boolean addToCartFallBack(String userId,
-                                     CartItemRequest request,
-                                     Exception exception) {
-        exception.printStackTrace();
-        return false;
+    public void removeItemFromCart(Long userId, Long productId) {
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found"));
+        cart.removeItem(productId);
+        cartRepository.save(cart);
     }
 
-    public boolean deleteItemFromCart(String userId, String productId) {
-        CartItem cartItem = cartItemRepository.findByUserIdAndProductId(userId, productId);
-
-        if (cartItem != null){
-            cartItemRepository.delete(cartItem);
-            return true;
-        }
-        return false;
+    public Cart getCartEntity(Long userId) {
+        return cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found"));
     }
 
-    public List<CartItem> getCart(String userId) {
-        return cartItemRepository.findByUserId(userId);
+    public CartResponse getCart(Long userId) {
+        Cart cart = getCartEntity(userId);
+        List<CartItemResponse> itemResponses = cart.getItems().stream()
+                .map(item -> new CartItemResponse(
+                        item.getProductId(),
+                        item.getQuantity(),
+                        item.getPrice(),
+                        item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()))
+                ))
+                .toList();
+
+        return new CartResponse(
+                cart.getId(),
+                cart.getUserId(),
+                cart.getTotalAmount(),
+                itemResponses
+        );
     }
 
-    public void clearCart(String userId) {
-        cartItemRepository.deleteByUserId(userId);
+    public void clearCart(Long userId) {
+        Cart cart = getCartEntity(userId);
+        cart.clear();
+        cartRepository.save(cart);
+    }
+
+    public void addToCartFallback(
+            Long userId,
+            CartItemRequest request,
+            Exception ex) {
+
+        throw new IllegalStateException(
+                "Unable to add item to cart. Please try again later", ex
+        );
     }
 }
-

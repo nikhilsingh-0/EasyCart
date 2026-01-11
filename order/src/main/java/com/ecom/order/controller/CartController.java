@@ -2,14 +2,12 @@ package com.ecom.order.controller;
 
 
 import com.ecom.order.dto.CartItemRequest;
-import com.ecom.order.model.CartItem;
+import com.ecom.order.dto.CartResponse;
 import com.ecom.order.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/cart")
@@ -19,25 +17,28 @@ public class CartController {
     private final CartService cartService;
 
     @PostMapping
-    public ResponseEntity<String> addToCart(@RequestHeader("X-User-ID") String userId, @RequestBody CartItemRequest request) {
-        if (!cartService.addToCart(userId, request)) {
-            return ResponseEntity.badRequest().body("Not able to complete the request");
-        }
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<Void> addToCart(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestBody CartItemRequest request) {
+
+        boolean result = cartService.addToCart(userId, request);
+        return result?ResponseEntity.status(HttpStatus.CREATED).build():ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
     }
 
     @DeleteMapping("/items/{productId}")
-    public ResponseEntity<Void> removeFromCart(@RequestHeader("X-User-ID") String userId, @PathVariable String productId) {
-        boolean deleted = cartService.deleteItemFromCart(userId, productId);
-        return deleted ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+    public ResponseEntity<Void> removeFromCart(
+            @RequestHeader("X-User-Id") Long userId,
+            @PathVariable Long productId) {
+
+        cartService.removeItemFromCart(userId, productId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
-    public ResponseEntity<List<CartItem>> getCart(
-            @RequestHeader("X-User-ID") String userId) {
+    public ResponseEntity<CartResponse> getCart(
+            @RequestHeader("X-User-Id") Long userId) {
+
         return ResponseEntity.ok(cartService.getCart(userId));
     }
-
 }
 

@@ -1,6 +1,14 @@
 spring:
   application:
     name: user
+  datasource:
+    url: jdbc:mysql://localhost:3306/user
+    username: springstudent
+    password: springstudent
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
   config:
     import: optional:configserver:http://localhost:8888
 server:
@@ -12,3 +20,11 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
     register-with-eureka: true
     fetch-registry: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
+jwt:
+  secret: Z0VxN3p4Rk1VbVhMZ0JQb3ZkR2J5T1J3S1R6Q0ZsQ3p2a0J1a2x3R0F4ZQ==
+  expiration: 86400000

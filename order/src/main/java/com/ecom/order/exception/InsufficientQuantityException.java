@@ -1,0 +1,7 @@
+package com.ecom.order.exception;
+
+public class InsufficientQuantityException extends RuntimeException{
+    public InsufficientQuantityException(String message) {
+        super(message);
+    }
+}
