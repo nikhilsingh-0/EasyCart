@@ -6,8 +6,23 @@
 ![Kafka](https://img.shields.io/badge/Kafka-Event--Driven-black)
 ![Redis](https://img.shields.io/badge/Redis-Caching-red)
 ![Microservices](https://img.shields.io/badge/Architecture-Microservices-blueviolet)
+[![API Docs](https://img.shields.io/badge/API-Docs-blue)](https://nikhilsingh-0.github.io/easycart-api-docs/)
 
 An **E-Commerce backend** built with **Spring Boot microservices**, featuring **API Gateway routing**, **JWT-based security**, **service discovery**, **Redis caching**, and **resilient communication**. The system supports **synchronous inter-service calls using OpenFeign** and **event-driven workflows with Kafka**, ensuring **high performance**, **fault tolerance**, and **scalability**.
+
+---
+
+## 📄 API Documentation
+
+The complete OpenAPI (Swagger) documentation for the EasyCart backend is available here:
+
+🔗 **EasyCart API Docs**:  https://nikhilsingh-0.github.io/easycart-api-docs/
+
+This documentation provides:
+- Detailed API endpoints
+- Request & response schemas
+- Authentication details
+- Error responses
 
 ---
 
@@ -45,9 +60,19 @@ An **E-Commerce backend** built with **Spring Boot microservices**, featuring **
 
 ---
 
-## 🏗️ High Level Architecture
+## 🏗️ High-Level Architecture
 
 <img width="781" height="521" alt="Easy_cart_PNG_HLD drawio (3)" src="https://github.com/user-attachments/assets/4ca39269-4d29-4396-8019-f383542dc127" />
+
+## 🔄 Request Flow
+
+1. Client registers or logs in and receives a JWT token
+2. Client sends requests to the API Gateway with the JWT
+3. API Gateway validates the JWT and applies routing & filters
+4. Request is forwarded to the target microservice
+5. Order Service processes the request and publishes a Kafka event
+6. Product Service consumes the event to update inventory
+7. Notification Service consumes the event to send notifications
 
 ---
 
@@ -89,6 +114,7 @@ An **E-Commerce backend** built with **Spring Boot microservices**, featuring **
 **Nikhil Singh**  
 Backend Developer | Java | Spring Boot | Microservices
 
-## 🤝 Contributing 
+## 🤝 Contributing
 
-If you like this project. Give it a ⭐ and feel free to **fork** or **contribute**!
+Contributions are welcome! 🚀  
+If you like this project, give it a ⭐ and feel free to **fork** or **contribute**.
